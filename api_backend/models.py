@@ -1,5 +1,8 @@
+import os.path
 from django.db import models
 from django.contrib.auth.models import User
+
+from PIL import Image
 
 
 class Participant(models.Model):
@@ -9,8 +12,18 @@ class Participant(models.Model):
     sex = models.CharField("Пол", max_length=15)
     avatar = models.ImageField(
         upload_to="images/avatars/",
-        default="images/avatars/default-avatar.jpg"
+        default="images/default_avatar.jpg"
     )
 
-    def __str__(self):
-        return f'{self.user}'
+    def add_watermark(self):
+        image_name = os.path.basename(self.avatar.path)
+        watermark = Image.open("media/images/watermark.jpg")
+        open_image = Image.open(self.avatar)
+        open_image.paste(watermark, (50, 50))
+        open_image.save(f"media/images/avatars/{self.user_id}_{image_name}")
+        watermarked_image = f"images/avatars/{self.user_id}_{image_name}"
+        return watermarked_image
+
+    def save(self, *args, **kwargs):
+        self.avatar = self.add_watermark()
+        super().save(*args, **kwargs)
