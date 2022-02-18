@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from django.contrib.auth.models import User
-from api_backend.models import Participant
+from api_backend.models import Participant, ParticipantMatch
 
 
 class ParticipantSerializer(serializers.ModelSerializer):
@@ -19,8 +19,8 @@ class ParticipantSerializer(serializers.ModelSerializer):
 class UserSerizalizer(serializers.ModelSerializer):
     """
     Сериализатор пользователя.
-    """
 
+    """
     participant = ParticipantSerializer(many=False)
 
     class Meta:
@@ -32,3 +32,13 @@ class UserSerizalizer(serializers.ModelSerializer):
         user = User.objects.create(**validated_data)
         Participant.objects.create(user=user, **participant_data)
         return user
+
+
+class ParticipantMatchSerializer(serializers.ModelSerializer):
+
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    participant = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = ParticipantMatch
+        fields = ["id", "user", "participant", "match"]
