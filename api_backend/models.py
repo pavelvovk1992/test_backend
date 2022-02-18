@@ -13,6 +13,9 @@ class Participant(models.Model):
     """Модель участника сервиса знакомств"""
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, verbose_name="Пользователь")
+    first_name = models.CharField(max_length=20, default="Anon")
+    last_name = models.CharField(max_length=25, default="Anonov")
+    email = models.CharField(max_length=30, null=True)
     sex = models.CharField("Пол", max_length=15)
     avatar = models.ImageField(
         upload_to="images/avatars/",
