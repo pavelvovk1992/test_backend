@@ -1,3 +1,8 @@
+from rest_framework import status
+from rest_framework.response import Response
+
+from rest_framework.authentication import BasicAuthentication
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -28,9 +33,35 @@ class ParticipantMatchViewSet(viewsets.ModelViewSet):
     """
     queryset = ParticipantMatch.objects.all()
     serializer_class = ParticipantMatchSerializer
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        pk = self.kwargs['pk']
+    def create(self, request, *args, **kwargs):
         user = self.request.user
-        serializer.save(user=user)
-        serializer.save(participant=Participant.objects.get(id=pk))
+        participant = Participant.objects.get(id=self.kwargs['pk'])
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not self.check_user_match(user):
+            serializer.save(user=user)
+            serializer.save(participant=Participant.objects.filter(id=self.kwargs['pk']))
+            return Response({"It's success!": participant.user.email}, status=status.HTTP_201_CREATED)
+        else:
+            if not self.check_user_matches_participant(user, participant):
+                ParticipantMatch.objects.get(user=user).participant.add(self.kwargs['pk'])
+                return Response({"It's success!": participant.user.email}, status=status.HTTP_201_CREATED)
+            return Response({"Failed": "You have already matched this participant"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    def check_user_matches_participant(self, user, participant):
+        try:
+            existing_match = self.check_user_match(user).get(participant=participant)
+        except:
+            existing_match = None
+        return existing_match
+
+    def check_user_match(self, user):
+        try:
+            participant_match = ParticipantMatch.objects.filter(user=user)
+        except:
+            participant_match = None
+        return participant_match

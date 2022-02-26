@@ -13,14 +13,16 @@ class Participant(models.Model):
     """Модель участника сервиса знакомств"""
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, verbose_name="Пользователь")
-    first_name = models.CharField(max_length=20, default="Anon")
-    last_name = models.CharField(max_length=25, default="Anonov")
+    first_name = models.CharField("Имя", max_length=20, default="Anon")
+    last_name = models.CharField("Фамилия", max_length=25, default="Anonov")
     email = models.CharField(max_length=30, null=True)
     sex = models.CharField("Пол", max_length=15)
     avatar = models.ImageField(
         upload_to="images/avatars/",
         default="images/default_avatar.jpg"
     )
+    longitude = models.FloatField("Долгота", null=True)
+    latitude = models.FloatField("Широта", null=True)
 
     def save(self, *args, **kwargs):
         self.avatar = self.add_watermark()
@@ -39,28 +41,37 @@ class Participant(models.Model):
 class ParticipantMatch(models.Model):
     """Модель оценивания участников"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, verbose_name="Пользователь")
-    participant = models.ForeignKey(
+    participant = models.ManyToManyField(
         Participant,
-        on_delete=models.CASCADE,
-        null=True,
         verbose_name="Участник"
     )
-    match = models.BooleanField("Совпадение", null=True)
 
-    def save(self, *args, **kwargs):
-        if not self.check_existing_match():
-            super().save(*args, **kwargs)
 
-    def check_existing_match(self):
-        user = self.user
-        participant = self.participant
+# class ParticipantMatch(models.Model):
+#     """Модель оценивания участников"""
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, verbose_name="Пользователь")
+#     participant = models.ForeignKey(
+#         Participant,
+#         on_delete=models.CASCADE,
+#         null=True,
+#         verbose_name="Участник"
+#     )
+#     match = models.BooleanField("Совпадение", null=True)
 
-        #  Пробуем достать объект ParticipantMatch юзера по отношению к оцениваемому участнику.
-        try:
-            participant_match = ParticipantMatch.objects.filter(user=user).get(participant=participant)
-        except:
-            participant_match = None
-        return participant_match
+    # def save(self, *args, **kwargs):
+    #     if not self.check_existing_match():
+    #         super().save(*args, **kwargs)
+    #
+    # def check_existing_match(self):
+    #     user = self.user
+    #     participant = self.participant
+    #
+    #     #  Пробуем достать объект ParticipantMatch юзера по отношению к оцениваемому участнику.
+    #     try:
+    #         participant_match = ParticipantMatch.objects.filter(user=user).get(participant=participant)
+    #     except:
+    #         participant_match = None
+    #     return participant_match
 
 
 @receiver(post_save, sender=ParticipantMatch)

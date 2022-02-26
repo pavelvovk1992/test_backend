@@ -12,7 +12,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "username", "password", "first_name", "last_name", "email"]
+        # fields = ["id", "username", "password", "first_name", "last_name", "email"]
+        fields = ["id", "username", "password"]
 
 
 class ParticipantCreateSerializer(serializers.ModelSerializer):
@@ -25,18 +26,25 @@ class ParticipantCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Participant
-        fields = ["id", "sex", "avatar", "user"]
+        fields = ["id", "first_name", "last_name", "email", "sex", "avatar", "user"]
 
     def create(self, validated_data):
-        sex = validated_data["sex"]
-        avatar = validated_data["avatar"]
-        email = validated_data["user"]["email"]
-        first_name = validated_data["user"]["first_name"]
-        last_name = validated_data["user"]["last_name"]
-        user_data = validated_data.pop("user")
-        user = User.objects.create(**user_data)
-        Participant.objects.create(user=user, first_name=first_name, last_name=last_name,
-                                   email=email, sex=sex, avatar=avatar)
+        user = User.objects.create(
+            email=validated_data["email"],
+            username=validated_data["user"]["username"],
+            first_name=validated_data["first_name"],
+            last_name=validated_data["last_name"]
+        )
+        user.set_password(validated_data["user"]["password"])
+        user.save()
+        validated_data.pop("user")
+        try:
+            avatar = validated_data["avatar"]
+        except:
+            avatar = None
+        Participant.objects.create(
+            user=user, **validated_data)
+        validated_data["почта"] = validated_data["email"]
         return Participant(**validated_data)
 
 
@@ -56,8 +64,7 @@ class ParticipantMatchSerializer(serializers.ModelSerializer):
 
     """
     user = serializers.PrimaryKeyRelatedField(read_only=True)
-    participant = serializers.PrimaryKeyRelatedField(read_only=True)
-
+    participant = serializers.PrimaryKeyRelatedField(many=True, queryset=Participant.objects.all())
     class Meta:
         model = ParticipantMatch
-        fields = ["id", "user", "participant", "match"]
+        fields = ["id", "user", "participant"]
