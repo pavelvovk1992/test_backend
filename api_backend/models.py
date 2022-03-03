@@ -1,5 +1,6 @@
 import os.path
 from django.db import models
+from django.db.models.signals import m2m_changed
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth.models import User
@@ -24,8 +25,12 @@ class Participant(models.Model):
     longitude = models.FloatField("Долгота", null=True)
     latitude = models.FloatField("Широта", null=True)
 
+    def __str__(self):
+        return self.user.username
+
     def save(self, *args, **kwargs):
-        self.avatar = self.add_watermark()
+        if not self.avatar:
+            self.avatar = self.add_watermark()
         super().save(*args, **kwargs)
 
     def add_watermark(self):
@@ -40,56 +45,49 @@ class Participant(models.Model):
 
 class ParticipantMatch(models.Model):
     """Модель оценивания участников"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, verbose_name="Пользователь")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, verbose_name="Пользователь")
     participant = models.ManyToManyField(
         Participant,
-        verbose_name="Участник"
+        verbose_name="Участник",
     )
 
-
-# class ParticipantMatch(models.Model):
-#     """Модель оценивания участников"""
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, verbose_name="Пользователь")
-#     participant = models.ForeignKey(
-#         Participant,
-#         on_delete=models.CASCADE,
-#         null=True,
-#         verbose_name="Участник"
-#     )
-#     match = models.BooleanField("Совпадение", null=True)
-
-    # def save(self, *args, **kwargs):
-    #     if not self.check_existing_match():
-    #         super().save(*args, **kwargs)
-    #
-    # def check_existing_match(self):
-    #     user = self.user
-    #     participant = self.participant
-    #
-    #     #  Пробуем достать объект ParticipantMatch юзера по отношению к оцениваемому участнику.
-    #     try:
-    #         participant_match = ParticipantMatch.objects.filter(user=user).get(participant=participant)
-    #     except:
-    #         participant_match = None
-    #     return participant_match
+# @receiver(m2m_changed, sender=ParticipantMatch.participant.through)
+# def create_matched_message(sender, action, instance, **kwargs):
+#     if action == "post_add":
+#         for participant in instance.participant.all():
+#             print(participant.user)
+#             print(ParticipantMatch.objects.get(user=participant.user))
+#             #  Объект оценивания оцениваемОГО участника
+#             participant_matches = ParticipantMatch.objects.get(user=participant.user)
+#             print(participant_matches.participant.filter(participant=instance.participant))
 
 
-@receiver(post_save, sender=ParticipantMatch)
-def create_matched_message(sender, instance, created, **kwargs):
-    if created:
-        user = instance.user
-        participant = instance.participant
 
-        #  Пробуем достать объект ParticipantMatch оцениваемого участника по отношению к юзеру.
-        try:
-            participant_match = ParticipantMatch.objects.filter(user=participant.user)\
-                                                    .get(participant=Participant.objects.get(user=user))
-        except:
-            participant_match = None
-        if participant_match and participant_match.match and instance.match:
-            sending_mail(
-                instance.user.username,
-                participant.user.username,
-                participant.user.email,
-                user.email
-            )
+
+
+# @receiver(post_save, sender=ParticipantMatch)
+# def create_matched_message(sender, instance, created, **kwargs):
+#     if created:
+#         print(1)
+
+        # #  Пробуем достать объект ParticipantMatch оцениваемого участника по отношению к юзеру.
+        # try:
+        #     participant_matches = ParticipantMatch.objects.filter(user=participant.user)
+        #     # participant_match = ParticipantMatch.objects.filter(user=participant.user)\
+        #     #                                         .get(participant=Participant.objects.get(user=user))
+        # except:
+        #     participant_matches = None
+        # print(participant_matches)
+        # if participant_match and participant_match.match and instance.match:
+        #     sending_mail(
+        #         instance.user.username,
+        #         participant.user.username,
+        #         participant.user.email,
+        #         user.email
+        #     )
+
+
+"""
+Цветущим вдоль дорог алым розам проще, нежели белым.
+Они не меняют цвета.
+"""

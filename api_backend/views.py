@@ -1,9 +1,13 @@
+from django.db import IntegrityError
+
 from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
+
 from api_backend.models import Participant, ParticipantMatch
-from api_backend.serializers import ParticipantMatchSerializer, ParticipantCreateSerializer, ParticipantListSerializer
+from api_backend.serializers import ParticipantMatchSerializer, ParticipantListSerializer, ParticipantCreateSerializer
+from api_backend.utils import sending_mail, test_mail
 
 
 class ParticipantViewSet(viewsets.ModelViewSet):
@@ -19,6 +23,8 @@ class ParticipantViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["list"]:
             self.permission_classes = [permissions.IsAuthenticated]
+        elif self.action in ["destroy"]:
+            self.permission_classes = [permissions.IsAdminUser]
         return super().get_permissions()
 
     def get_serializer_class(self):
@@ -36,32 +42,34 @@ class ParticipantMatchViewSet(viewsets.ModelViewSet):
     serializer_class = ParticipantMatchSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_permissions(self):
+        if self.action in ["destroy"]:
+            self.permission_classes = [permissions.IsAdminUser]
+        return super().get_permissions()
+
     def create(self, request, *args, **kwargs):
         user = self.request.user
-        participant = Participant.objects.get(id=self.kwargs['pk'])
+        participant = Participant.objects.filter(id=self.kwargs['pk'])
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        if not self.check_user_match(user):
+        try:
             serializer.save(user=user)
-            serializer.save(participant=Participant.objects.filter(id=self.kwargs['pk']))
-            return Response({"It's success!": participant.user.email}, status=status.HTTP_201_CREATED)
-        else:
-            if not self.check_user_matches_participant(user, participant):
+            serializer.save(participant=participant)
+            self.mail(user, participant[0], participant[0].user.email, user.email)
+            return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
+
+        except IntegrityError:
+            if participant[0] not in ParticipantMatch.objects.get(user=user).participant.all():
                 ParticipantMatch.objects.get(user=user).participant.add(self.kwargs['pk'])
-                return Response({"It's success!": participant.user.email}, status=status.HTTP_201_CREATED)
-            return Response({"Failed": "You have already matched this participant"}, status=status.HTTP_400_BAD_REQUEST)
+                self.mail(user, participant[0], participant[0].user.email, user.email)
+                return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
+        return Response({"Failed": "You have already matched this participant"}, status=status.HTTP_400_BAD_REQUEST)
 
-
-    def check_user_matches_participant(self, user, participant):
+    def mail(self, user, participant, participant_email, user_email):
         try:
-            existing_match = self.check_user_match(user).get(participant=participant)
+            participant_matches = ParticipantMatch.objects.get(user=participant.user)
         except:
-            existing_match = None
-        return existing_match
-
-    def check_user_match(self, user):
-        try:
-            participant_match = ParticipantMatch.objects.filter(user=user)
-        except:
-            participant_match = None
-        return participant_match
+            participant_matches = None
+        if participant_matches:
+            if user.participant in participant_matches.participant.all():
+                sending_mail(user, participant, participant_email, user_email)

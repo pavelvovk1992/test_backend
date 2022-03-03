@@ -1,5 +1,6 @@
-Django
+django
 djangorestframework
 django-rest-auth
 django-filter
-Pillow
+djangorestframework-simplejwt
+pillow

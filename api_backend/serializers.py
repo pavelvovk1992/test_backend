@@ -65,6 +65,7 @@ class ParticipantMatchSerializer(serializers.ModelSerializer):
     """
     user = serializers.PrimaryKeyRelatedField(read_only=True)
     participant = serializers.PrimaryKeyRelatedField(many=True, queryset=Participant.objects.all())
+
     class Meta:
         model = ParticipantMatch
         fields = ["id", "user", "participant"]
