@@ -1,13 +1,8 @@
 import os.path
 from django.db import models
-from django.db.models.signals import m2m_changed
-from django.db.models.signals import post_save
-from django.dispatch import receiver
 from django.contrib.auth.models import User
 
 from PIL import Image
-
-from api_backend.utils import sending_mail
 
 
 class Participant(models.Model):
@@ -50,44 +45,3 @@ class ParticipantMatch(models.Model):
         Participant,
         verbose_name="Участник",
     )
-
-# @receiver(m2m_changed, sender=ParticipantMatch.participant.through)
-# def create_matched_message(sender, action, instance, **kwargs):
-#     if action == "post_add":
-#         for participant in instance.participant.all():
-#             print(participant.user)
-#             print(ParticipantMatch.objects.get(user=participant.user))
-#             #  Объект оценивания оцениваемОГО участника
-#             participant_matches = ParticipantMatch.objects.get(user=participant.user)
-#             print(participant_matches.participant.filter(participant=instance.participant))
-
-
-
-
-
-# @receiver(post_save, sender=ParticipantMatch)
-# def create_matched_message(sender, instance, created, **kwargs):
-#     if created:
-#         print(1)
-
-        # #  Пробуем достать объект ParticipantMatch оцениваемого участника по отношению к юзеру.
-        # try:
-        #     participant_matches = ParticipantMatch.objects.filter(user=participant.user)
-        #     # participant_match = ParticipantMatch.objects.filter(user=participant.user)\
-        #     #                                         .get(participant=Participant.objects.get(user=user))
-        # except:
-        #     participant_matches = None
-        # print(participant_matches)
-        # if participant_match and participant_match.match and instance.match:
-        #     sending_mail(
-        #         instance.user.username,
-        #         participant.user.username,
-        #         participant.user.email,
-        #         user.email
-        #     )
-
-
-"""
-Цветущим вдоль дорог алым розам проще, нежели белым.
-Они не меняют цвета.
-"""

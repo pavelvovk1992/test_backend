@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.mail import send_mass_mail, send_mail
+from django.core.mail import send_mass_mail
 
 
 def sending_mail(user, participant, participant_email, user_email):
@@ -10,14 +10,4 @@ def sending_mail(user, participant, participant_email, user_email):
     message_to_participant = (subject, text_to_participant, settings.EMAIL_HOST_USER, [participant_email])
     send_mass_mail(
         (message_to_user, message_to_participant), fail_silently=False
-    )
-
-
-def test_mail():
-    send_mail(
-        'Subject here',
-        'Here is the message.',
-        settings.EMAIL_HOST_USER,
-        ['vovk.pavlik@bk.ru'],
-        fail_silently=False,
     )

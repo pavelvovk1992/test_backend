@@ -4,10 +4,11 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
+from geopy.distance import geodesic
 
 from api_backend.models import Participant, ParticipantMatch
 from api_backend.serializers import ParticipantMatchSerializer, ParticipantListSerializer, ParticipantCreateSerializer
-from api_backend.utils import sending_mail, test_mail
+from api_backend.utils import sending_mail
 
 
 class ParticipantViewSet(viewsets.ModelViewSet):
@@ -29,9 +30,18 @@ class ParticipantViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ["list"]:
+            self.distance()
             return ParticipantListSerializer
         return super().get_serializer_class()
 
+    def distance(self):
+        user = self.request.user
+        user_latitude = user.participant.latitude
+        user_longitude = user.participant.longitude
+
+        for participant in Participant.objects.all():
+            if geodesic((user_latitude, user_longitude), (participant.latitude, participant.longitude)).km < 3:
+                print(participant)
 
 class ParticipantMatchViewSet(viewsets.ModelViewSet):
     """
@@ -54,15 +64,18 @@ class ParticipantMatchViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         try:
             serializer.save(user=user)
-            serializer.save(participant=participant)
-            self.mail(user, participant[0], participant[0].user.email, user.email)
-            return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
+            # serializer.save(participant=participant)
+            # self.mail(user, participant[0], participant[0].user.email, user.email)
+            # return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
 
         except IntegrityError:
-            if participant[0] not in ParticipantMatch.objects.get(user=user).participant.all():
-                ParticipantMatch.objects.get(user=user).participant.add(self.kwargs['pk'])
-                self.mail(user, participant[0], participant[0].user.email, user.email)
-                return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
+            # if participant[0] not in ParticipantMatch.objects.get(user=user).participant.all():
+
+            #   Если М2М то можно сохранять OneToOne поле, а М2М сразу через add.
+            ParticipantMatch.objects.get(user=user).participant.add(self.kwargs['pk'])
+            print("1-1")
+            # self.mail(user, participant[0], participant[0].user.email, user.email)
+            return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
         return Response({"Failed": "You have already matched this participant"}, status=status.HTTP_400_BAD_REQUEST)
 
     def mail(self, user, participant, participant_email, user_email):
