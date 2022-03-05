@@ -4,8 +4,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from geopy.distance import geodesic
-
+from api_backend.filters import DistanceFilter
 from api_backend.models import Participant, ParticipantMatch
 from api_backend.serializers import ParticipantMatchSerializer, ParticipantListSerializer, ParticipantCreateSerializer
 from api_backend.utils import sending_mail
@@ -19,7 +18,8 @@ class ParticipantViewSet(viewsets.ModelViewSet):
     queryset = Participant.objects.all()
     serializer_class = ParticipantCreateSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["sex", "first_name", "last_name"]
+    # filterset_fields = ["sex", "first_name", "last_name"]
+    filter_class = DistanceFilter
 
     def get_permissions(self):
         if self.action in ["list"]:
@@ -30,18 +30,9 @@ class ParticipantViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action in ["list"]:
-            self.distance()
             return ParticipantListSerializer
         return super().get_serializer_class()
 
-    def distance(self):
-        user = self.request.user
-        user_latitude = user.participant.latitude
-        user_longitude = user.participant.longitude
-
-        for participant in Participant.objects.all():
-            if geodesic((user_latitude, user_longitude), (participant.latitude, participant.longitude)).km < 3:
-                print(participant)
 
 class ParticipantMatchViewSet(viewsets.ModelViewSet):
     """

@@ -44,7 +44,6 @@ class ParticipantCreateSerializer(serializers.ModelSerializer):
             avatar = None
         Participant.objects.create(
             user=user, **validated_data)
-        validated_data["почта"] = validated_data["email"]
         return Participant(**validated_data)
 
 

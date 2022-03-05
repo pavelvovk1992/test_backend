@@ -23,10 +23,9 @@ class Participant(models.Model):
     def __str__(self):
         return self.user.username
 
-    def save(self, *args, **kwargs):
-        if not self.avatar:
-            self.avatar = self.add_watermark()
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     self.avatar = self.add_watermark()
+    #     super().save(*args, **kwargs)
 
     def add_watermark(self):
         image_name = os.path.basename(self.avatar.path)
