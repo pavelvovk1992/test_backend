@@ -18,7 +18,6 @@ class ParticipantViewSet(viewsets.ModelViewSet):
     queryset = Participant.objects.all()
     serializer_class = ParticipantCreateSerializer
     filter_backends = [DjangoFilterBackend]
-    # filterset_fields = ["sex", "first_name", "last_name"]
     filter_class = DistanceFilter
 
     def get_permissions(self):

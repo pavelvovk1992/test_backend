@@ -1,6 +1,7 @@
-django
-djangorestframework
+django~=4.0.3
+djangorestframework~=3.13.1
 django-rest-auth
-django-filter
+django-filter~=21.1
 djangorestframework-simplejwt
-pillow
+pillow~=9.0.1
+geopy~=2.2.0

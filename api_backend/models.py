@@ -1,9 +1,9 @@
 import os.path
+
 from django.db import models
 from django.contrib.auth.models import User
 
 from PIL import Image
-
 
 class Participant(models.Model):
     """Модель участника сервиса знакомств"""
@@ -19,13 +19,22 @@ class Participant(models.Model):
     )
     longitude = models.FloatField("Долгота", null=True)
     latitude = models.FloatField("Широта", null=True)
+    distance = models.FloatField("Расстояние", blank=True, null=True)
+
+    __current_avatar = None
 
     def __str__(self):
         return self.user.username
 
-    # def save(self, *args, **kwargs):
-    #     self.avatar = self.add_watermark()
-    #     super().save(*args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__current_avatar = self.avatar
+
+    def save(self, *args, **kwargs):
+        if self.avatar != self.__current_avatar:
+            self.avatar = self.add_watermark()
+            self.__current_avatar.delete()
+        super().save(*args, **kwargs)
 
     def add_watermark(self):
         image_name = os.path.basename(self.avatar.path)

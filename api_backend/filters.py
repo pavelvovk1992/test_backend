@@ -5,7 +5,11 @@ from api_backend.models import Participant
 
 
 class DistanceFilter(django_filters.FilterSet):
-    distance = django_filters.CharFilter(field_name="distance", method="get_distance")
+    distance = django_filters.CharFilter(
+        field_name="distance",
+        lookup_expr="до Вас, км.",
+        method="filter_participants_by_distance"
+    )
 
     def check_distance(self):
         user = self.request.user
@@ -26,4 +30,4 @@ class DistanceFilter(django_filters.FilterSet):
 
     class Meta:
         model = Participant
-        fields = ["distance"]
+        fields = ["first_name", "last_name", "sex", "distance"]
