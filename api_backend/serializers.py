@@ -62,9 +62,7 @@ class ParticipantMatchSerializer(serializers.ModelSerializer):
     Сериализатор для оценки участника участника
 
     """
-    user = serializers.PrimaryKeyRelatedField(read_only=True)
-    participant = serializers.PrimaryKeyRelatedField(many=True, queryset=Participant.objects.all())
 
     class Meta:
         model = ParticipantMatch
-        fields = ["id", "user", "participant"]
+        fields = ["id"]

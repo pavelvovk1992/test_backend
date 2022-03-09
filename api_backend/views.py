@@ -54,18 +54,14 @@ class ParticipantMatchViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         try:
             serializer.save(user=user)
-            # serializer.save(participant=participant)
-            # self.mail(user, participant[0], participant[0].user.email, user.email)
-            # return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
-
-        except IntegrityError:
-            # if participant[0] not in ParticipantMatch.objects.get(user=user).participant.all():
-
-            #   Если М2М то можно сохранять OneToOne поле, а М2М сразу через add.
-            ParticipantMatch.objects.get(user=user).participant.add(self.kwargs['pk'])
-            print("1-1")
-            # self.mail(user, participant[0], participant[0].user.email, user.email)
+            serializer.save(participant=participant)
+            self.mail(user, participant[0], participant[0].user.email, user.email)
             return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
+        except IntegrityError:
+            if participant[0] not in ParticipantMatch.objects.get(user=user).participant.all():
+                ParticipantMatch.objects.get(user=user).participant.add(self.kwargs['pk'])
+                self.mail(user, participant[0], participant[0].user.email, user.email)
+                return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
         return Response({"Failed": "You have already matched this participant"}, status=status.HTTP_400_BAD_REQUEST)
 
     def mail(self, user, participant, participant_email, user_email):

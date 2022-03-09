@@ -1,3 +1,4 @@
+import os
 import os.path
 
 from django.db import models
@@ -33,7 +34,6 @@ class Participant(models.Model):
     def save(self, *args, **kwargs):
         if self.avatar != self.__current_avatar:
             self.avatar = self.add_watermark()
-            self.__current_avatar.delete()
         super().save(*args, **kwargs)
 
     def add_watermark(self):
