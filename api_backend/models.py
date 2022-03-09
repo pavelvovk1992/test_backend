@@ -22,18 +22,16 @@ class Participant(models.Model):
     latitude = models.FloatField("Широта", null=True)
     distance = models.FloatField("Расстояние", blank=True, null=True)
 
-    __current_avatar = None
-
     def __str__(self):
         return self.user.username
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__current_avatar = self.avatar
-
     def save(self, *args, **kwargs):
-        if self.avatar != self.__current_avatar:
+        if self.pk is None:
             self.avatar = self.add_watermark()
+        else:
+            orig = Participant.objects.get(pk=self.pk)
+            if orig.avatar != self.avatar:
+                self.avatar = self.add_watermark()
         super().save(*args, **kwargs)
 
     def add_watermark(self):
