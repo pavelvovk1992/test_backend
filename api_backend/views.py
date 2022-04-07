@@ -55,20 +55,11 @@ class ParticipantMatchViewSet(viewsets.ModelViewSet):
         try:
             serializer.save(user=user)
             serializer.save(participant=participant)
-            self.mail(user, participant[0], participant[0].user.email, user.email)
+            sending_mail(user, participant[0], participant[0].user.email, user.email)
             return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
         except IntegrityError:
             if participant[0] not in ParticipantMatch.objects.get(user=user).participant.all():
                 ParticipantMatch.objects.get(user=user).participant.add(self.kwargs['pk'])
-                self.mail(user, participant[0], participant[0].user.email, user.email)
+                sending_mail(user, participant[0], participant[0].user.email, user.email)
                 return Response({"It's success!": participant[0].user.email}, status=status.HTTP_201_CREATED)
         return Response({"Failed": "You have already matched this participant"}, status=status.HTTP_400_BAD_REQUEST)
-
-    def mail(self, user, participant, participant_email, user_email):
-        try:
-            participant_matches = ParticipantMatch.objects.get(user=participant.user)
-        except:
-            participant_matches = None
-        if participant_matches:
-            if user.participant in participant_matches.participant.all():
-                sending_mail(user, participant, participant_email, user_email)
